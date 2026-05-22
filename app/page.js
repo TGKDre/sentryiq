@@ -4,56 +4,23 @@ import { useState } from 'react'
 const SAMPLE_POLICIES = {
   critical: {
     label: '🔴 Critical – Full Admin Wildcard',
-    policy: JSON.stringify({
-      Version: '2012-10-17',
-      Statement: [
-        { Effect: 'Allow', Action: '*', Resource: '*' }
-      ]
-    }, null, 2)
+    policy: JSON.stringify({ Version: '2012-10-17', Statement: [{ Effect: 'Allow', Action: '*', Resource: '*' }] }, null, 2)
   },
   high: {
     label: '🟠 High – Overprivileged S3 + IAM',
-    policy: JSON.stringify({
-      Version: '2012-10-17',
-      Statement: [
-        { Effect: 'Allow', Action: ['s3:*', 'iam:CreateUser', 'iam:AttachUserPolicy'], Resource: '*' },
-        { Effect: 'Allow', Action: 'ec2:Describe*', Resource: '*' }
-      ]
-    }, null, 2)
+    policy: JSON.stringify({ Version: '2012-10-17', Statement: [{ Effect: 'Allow', Action: ['s3:*', 'iam:CreateUser', 'iam:AttachUserPolicy'], Resource: '*' }, { Effect: 'Allow', Action: 'ec2:Describe*', Resource: '*' }] }, null, 2)
   },
   medium: {
     label: '🟡 Medium – Read-Heavy, No MFA Condition',
-    policy: JSON.stringify({
-      Version: '2012-10-17',
-      Statement: [
-        { Effect: 'Allow', Action: ['s3:GetObject', 's3:ListBucket', 'cloudwatch:GetMetricData', 'logs:DescribeLogGroups'], Resource: '*' }
-      ]
-    }, null, 2)
+    policy: JSON.stringify({ Version: '2012-10-17', Statement: [{ Effect: 'Allow', Action: ['s3:GetObject', 's3:ListBucket', 'cloudwatch:GetMetricData', 'logs:DescribeLogGroups'], Resource: '*' }] }, null, 2)
   },
   low: {
     label: '🟢 Low – Scoped Read-Only',
-    policy: JSON.stringify({
-      Version: '2012-10-17',
-      Statement: [
-        {
-          Effect: 'Allow',
-          Action: ['s3:GetObject'],
-          Resource: 'arn:aws:s3:::my-secure-bucket/*',
-          Condition: { Bool: { 'aws:MultiFactorAuthPresent': 'true' } }
-        }
-      ]
-    }, null, 2)
+    policy: JSON.stringify({ Version: '2012-10-17', Statement: [{ Effect: 'Allow', Action: ['s3:GetObject'], Resource: 'arn:aws:s3:::my-secure-bucket/*', Condition: { Bool: { 'aws:MultiFactorAuthPresent': 'true' } } }] }, null, 2)
   },
   stale: {
     label: '🔴 Critical – Stale Keys + Cross-Account',
-    policy: JSON.stringify({
-      Version: '2012-10-17',
-      Statement: [
-        { Effect: 'Allow', Action: ['sts:AssumeRole'], Resource: 'arn:aws:iam::*:role/*' },
-        { Effect: 'Allow', Action: ['secretsmanager:GetSecretValue', 'ssm:GetParameters'], Resource: '*' },
-        { Effect: 'Allow', Action: ['kms:Decrypt', 'kms:GenerateDataKey'], Resource: '*' }
-      ]
-    }, null, 2)
+    policy: JSON.stringify({ Version: '2012-10-17', Statement: [{ Effect: 'Allow', Action: ['sts:AssumeRole'], Resource: 'arn:aws:iam::*:role/*' }, { Effect: 'Allow', Action: ['secretsmanager:GetSecretValue', 'ssm:GetParameters'], Resource: '*' }, { Effect: 'Allow', Action: ['kms:Decrypt', 'kms:GenerateDataKey'], Resource: '*' }] }, null, 2)
   }
 }
 
@@ -77,6 +44,68 @@ function getFrameworkLink(f) {
     if (f.startsWith(key)) return FRAMEWORK_LINKS[key]
   }
   return `https://www.google.com/search?q=${encodeURIComponent(f + ' security framework')}`
+}
+
+function CopyButton({ getText }) {
+  const [copied, setCopied] = useState(false)
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(getText())
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {}
+  }
+  return (
+    <button
+      onClick={handleCopy}
+      className="text-xs text-slate-400 hover:text-cyan-400 transition flex items-center gap-1"
+    >
+      {copied ? '✓ Copied' : '📋 Copy'}
+    </button>
+  )
+}
+
+function SkeletonBlock({ className }) {
+  return <div className={`animate-pulse bg-slate-700 rounded ${className}`} />
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <SkeletonBlock className="h-5 w-32" />
+        <div className="text-right space-y-1">
+          <SkeletonBlock className="h-3 w-20 ml-auto" />
+          <SkeletonBlock className="h-10 w-24 ml-auto" />
+        </div>
+      </div>
+      <div className="space-y-3">
+        <SkeletonBlock className="h-3 w-20" />
+        {[1,2,3].map(i => (
+          <div key={i} className="bg-slate-800 rounded-lg p-4 flex gap-3">
+            <SkeletonBlock className="h-6 w-16 shrink-0" />
+            <div className="flex-1 space-y-2">
+              <SkeletonBlock className="h-4 w-3/4" />
+              <SkeletonBlock className="h-3 w-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="space-y-2">
+        <SkeletonBlock className="h-3 w-40" />
+        <SkeletonBlock className="h-4 w-full" />
+        <SkeletonBlock className="h-4 w-5/6" />
+      </div>
+      <div className="space-y-2">
+        <SkeletonBlock className="h-3 w-36" />
+        <div className="flex gap-2">
+          <SkeletonBlock className="h-6 w-24 rounded-full" />
+          <SkeletonBlock className="h-6 w-20 rounded-full" />
+          <SkeletonBlock className="h-6 w-28 rounded-full" />
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function Home() {
@@ -110,6 +139,15 @@ export default function Home() {
     }
   }
 
+  function handleClear() {
+    setPolicy('')
+    setResult(null)
+    setError(null)
+    setExpandedFindings({})
+    setRemediationOpen(false)
+    setSampleOpen(false)
+  }
+
   const scoreColor = (score) => {
     if (score >= 80) return 'text-red-400'
     if (score >= 50) return 'text-yellow-400'
@@ -117,6 +155,12 @@ export default function Home() {
   }
 
   const toggleFinding = (i) => setExpandedFindings(prev => ({ ...prev, [i]: !prev[i] }))
+
+  const findingsText = (findings) =>
+    findings.map((f, i) => `[${f.severity}] ${f.title}\n${f.description}\n${f.explanation || ''}${f.example ? `\nExample: ${f.example}` : ''}`).join('\n\n')
+
+  const remediationText = (result) =>
+    `${result.remediation}\n\nSteps:\n${(result.remediationSteps || []).map((s, i) => `${i+1}. ${s}`).join('\n')}`
 
   return (
     <main className="min-h-screen p-6 max-w-4xl mx-auto">
@@ -128,12 +172,16 @@ export default function Home() {
       <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 mb-6">
         <div className="flex justify-between items-center mb-3">
           <label className="text-slate-300 font-semibold text-sm uppercase tracking-widest">IAM Policy JSON</label>
-          <button
-            onClick={() => setSampleOpen(!sampleOpen)}
-            className="text-xs text-cyan-500 hover:text-cyan-300 transition"
-          >
-            {sampleOpen ? 'Hide Samples ▲' : 'Load Sample Policy ▼'}
-          </button>
+          <div className="flex gap-3">
+            <button onClick={() => setSampleOpen(!sampleOpen)} className="text-xs text-cyan-500 hover:text-cyan-300 transition">
+              {sampleOpen ? 'Hide Samples ▲' : 'Load Sample ▼'}
+            </button>
+            {(policy || result) && (
+              <button onClick={handleClear} className="text-xs text-slate-500 hover:text-red-400 transition">
+                ✕ Clear
+              </button>
+            )}
+          </div>
         </div>
 
         {sampleOpen && (
@@ -160,9 +208,17 @@ export default function Home() {
         <button
           onClick={handleAudit}
           disabled={loading || !policy.trim()}
-          className="mt-4 w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition"
+          className="mt-4 w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition relative overflow-hidden"
         >
-          {loading ? 'Analyzing...' : 'Run AI Audit'}
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+              Analyzing policy...
+            </span>
+          ) : 'Run AI Audit'}
         </button>
       </div>
 
@@ -172,7 +228,9 @@ export default function Home() {
         </div>
       )}
 
-      {result && (
+      {loading && <LoadingSkeleton />}
+
+      {!loading && result && (
         <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-slate-100">Audit Results</h2>
@@ -186,7 +244,10 @@ export default function Home() {
 
           {/* Findings */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-3">Findings</h3>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-widest">Findings</h3>
+              <CopyButton getText={() => findingsText(result.findings)} />
+            </div>
             <ul className="space-y-3">
               {result.findings.map((f, i) => (
                 <li key={i} className="bg-slate-800 rounded-lg overflow-hidden">
@@ -225,13 +286,16 @@ export default function Home() {
 
           {/* Remediation */}
           <div>
-            <button
-              onClick={() => setRemediationOpen(!remediationOpen)}
-              className="w-full flex justify-between items-center text-left"
-            >
-              <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-widest">Remediation Summary</h3>
-              <span className="text-xs text-cyan-500">{remediationOpen ? '▲ Hide Steps' : '▼ Show Fix Steps'}</span>
-            </button>
+            <div className="flex justify-between items-center">
+              <button
+                onClick={() => setRemediationOpen(!remediationOpen)}
+                className="flex-1 flex justify-between items-center text-left"
+              >
+                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-widest">Remediation Summary</h3>
+                <span className="text-xs text-cyan-500">{remediationOpen ? '▲ Hide Steps' : '▼ Show Fix Steps'}</span>
+              </button>
+              <CopyButton getText={() => remediationText(result)} />
+            </div>
             <p className="text-slate-300 text-sm leading-relaxed mt-2">{result.remediation}</p>
             {remediationOpen && result.remediationSteps && (
               <ol className="mt-3 space-y-2">
@@ -256,7 +320,7 @@ export default function Home() {
                   href={getFrameworkLink(f)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs bg-cyan-900/40 text-cyan-300 border border-cyan-700 px-3 py-1 rounded-full hover:bg-cyan-800/60 hover:text-white transition cursor-pointer"
+                  className="text-xs bg-cyan-900/40 text-cyan-300 border border-cyan-700 px-3 py-1 rounded-full hover:bg-cyan-800/60 hover:text-white transition"
                 >
                   {f} ↗
                 </a>
@@ -266,7 +330,7 @@ export default function Home() {
         </div>
       )}
 
-      <p className="text-center text-slate-600 text-xs mt-10">SentryIQ v0.2 · andreobiuzo · 2026</p>
+      <p className="text-center text-slate-600 text-xs mt-10">SentryIQ v0.3 · andreobiuzo · 2026</p>
     </main>
   )
 }
