@@ -18,11 +18,19 @@ export async function POST(req) {
     {
       "severity": "<CRITICAL|HIGH|MEDIUM|LOW>",
       "title": "<short finding title>",
-      "description": "<1-2 sentence explanation>"
+      "description": "<1-2 sentence explanation of what the finding is>",
+      "explanation": "<2-3 sentences explaining WHY this is dangerous, what an attacker could do with it, and the real-world impact>",
+      "example": "<a one-line concrete example of how this could be exploited or what it looks like in practice>"
     }
   ],
   "remediation": "<2-4 sentence plain-English remediation summary>",
-  "frameworks": ["<relevant framework violations e.g. NIST AC-6, CIS AWS 1.16, Zero Trust>"]
+  "remediationSteps": [
+    "<step 1: specific actionable instruction>",
+    "<step 2>",
+    "<step 3>",
+    "<add as many steps as needed>"
+  ],
+  "frameworks": ["<relevant framework violations e.g. NIST AC-6, CIS AWS 1.16, Zero Trust, SOC 2, ISO 27001>"]
 }
 
 IAM Policy to analyze:
