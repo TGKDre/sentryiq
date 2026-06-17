@@ -18,7 +18,7 @@ const PROVIDER_CONTEXT = {
 
 export async function POST(req) {
   try {
-    const { policy, provider = 'aws', compliance = 'general' } = await req.json()
+    const { policy, provider = 'aws', compliance = 'general', sessionAge } = await req.json()
 
     if (!policy || !policy.trim()) {
       return Response.json({ error: 'No policy provided' }, { status: 400 })
@@ -27,7 +27,11 @@ export async function POST(req) {
     const providerCtx = PROVIDER_CONTEXT[provider] || PROVIDER_CONTEXT.aws
     const complianceCtx = COMPLIANCE_CONTEXT[compliance] || COMPLIANCE_CONTEXT.general
 
-    const prompt = `You are a senior cloud security engineer and IAM specialist. You are analyzing a ${providerCtx}.
+    const sessionAgeCtx = sessionAge
+      ? `\n\nSession Context: This policy is associated with a credential/session that has been active for ${sessionAge} day(s) without re-authentication. The longer a session is active without re-validation, the greater the risk of credential misuse. Factor session staleness into your risk score — add up to 15 points for sessions over 90 days, up to 10 for 30-90 days, and up to 5 for 7-30 days. Flag any policies that would allow an attacker with a stale session to cause disproportionate damage.`
+      : ''
+
+    const prompt = `You are a senior cloud security engineer and IAM specialist. You are analyzing a ${providerCtx}.${sessionAgeCtx}
 
 Compliance Mode: ${complianceCtx}
 

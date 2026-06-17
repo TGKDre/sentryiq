@@ -285,6 +285,7 @@ export default function Home() {
   const [expandedDiffFindings, setExpandedDiffFindings] = useState({ before: {}, after: {} })
   const [remediationOpen, setRemediationOpen] = useState(false)
   const [sampleOpen, setSampleOpen] = useState(false)
+  const [sessionAge, setSessionAge] = useState('')
 
   const providerData = CLOUD_PROVIDERS[provider]
   const complianceLabel = COMPLIANCE_MODES.find(c => c.value === compliance)?.label
@@ -292,7 +293,7 @@ export default function Home() {
   async function handleAudit() {
     setLoading(true); setResult(null); setError(null); setExpandedFindings({}); setRemediationOpen(false)
     try {
-      const res = await fetch('/api/audit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ policy, provider, compliance }) })
+      const res = await fetch('/api/audit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ policy, provider, compliance, sessionAge: sessionAge ? parseInt(sessionAge) : undefined }) })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Audit failed')
       setResult(data)
@@ -303,8 +304,8 @@ export default function Home() {
     setLoading(true); setDiffResult(null); setError(null); setExpandedDiffFindings({ before: {}, after: {} })
     try {
       const [resBefore, resAfter] = await Promise.all([
-        fetch('/api/audit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ policy: policyBefore, provider, compliance }) }),
-        fetch('/api/audit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ policy: policyAfter, provider, compliance }) })
+        fetch('/api/audit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ policy: policyBefore, provider, compliance, sessionAge: sessionAge ? parseInt(sessionAge) : undefined }) }),
+        fetch('/api/audit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ policy: policyAfter, provider, compliance, sessionAge: sessionAge ? parseInt(sessionAge) : undefined }) })
       ])
       const [before, after] = await Promise.all([resBefore.json(), resAfter.json()])
       if (!resBefore.ok) throw new Error(before.error || 'Before audit failed')
@@ -315,7 +316,7 @@ export default function Home() {
 
   function handleClear() {
     setPolicy(''); setPolicyBefore(''); setPolicyAfter('')
-    setResult(null); setDiffResult(null); setError(null)
+    setResult(null); setDiffResult(null); setError(null); setSessionAge('')
     setExpandedFindings({}); setExpandedDiffFindings({ before: {}, after: {} })
     setRemediationOpen(false); setSampleOpen(false)
   }
@@ -351,7 +352,7 @@ export default function Home() {
       </div>
 
       {/* Provider + Compliance */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div>
           <label className="text-slate-400 text-xs uppercase tracking-widest block mb-2">Cloud Provider</label>
           <div className="flex gap-2">
@@ -371,6 +372,16 @@ export default function Home() {
             className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500">
             {COMPLIANCE_MODES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
+        </div>
+        <div>
+          <label className="text-slate-400 text-xs uppercase tracking-widest block mb-2">Session Age</label>
+          <div className="flex items-center gap-2">
+            <input type="number" min="0" max="365" value={sessionAge} onChange={e => setSessionAge(e.target.value)}
+              placeholder="days"
+              className="w-20 bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500" />
+            <span className="text-slate-500 text-xs">days active</span>
+          </div>
+          <p className="text-slate-600 text-xs mt-1">Stale sessions increase risk scoring</p>
         </div>
       </div>
 
