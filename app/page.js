@@ -286,11 +286,37 @@ export default function Home() {
   const [remediationOpen, setRemediationOpen] = useState(false)
   const [sampleOpen, setSampleOpen] = useState(false)
   const [sessionAge, setSessionAge] = useState('')
+  const [jsonError, setJsonError] = useState(null)
+
+  function isValidJson(str) {
+    if (!str.trim()) return false
+    try {
+      JSON.parse(str)
+      return true
+    } catch {
+      return false
+    }
+  }
 
   const providerData = CLOUD_PROVIDERS[provider]
   const complianceLabel = COMPLIANCE_MODES.find(c => c.value === compliance)?.label
 
+  function validatePolicyJson(policyStr, label) {
+    if (!policyStr.trim()) {
+      setJsonError(`${label} cannot be empty. Paste or load a policy to audit.`)
+      return false
+    }
+    if (!isValidJson(policyStr)) {
+      let hint = policyStr.length > 200 ? policyStr.slice(0, 200) + '...' : policyStr
+      setJsonError(`Invalid JSON in ${label}. Check for missing commas, quotes, or brackets.\n---\n${hint}`)
+      return false
+    }
+    return true
+  }
+
   async function handleAudit() {
+    setJsonError(null)
+    if (!validatePolicyJson(policy, 'Policy')) return
     setLoading(true); setResult(null); setError(null); setExpandedFindings({}); setRemediationOpen(false)
     try {
       const res = await fetch('/api/audit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ policy, provider, compliance, sessionAge: sessionAge ? parseInt(sessionAge) : undefined }) })
@@ -301,6 +327,9 @@ export default function Home() {
   }
 
   async function handleDiff() {
+    setJsonError(null)
+    if (!validatePolicyJson(policyBefore, 'Before (Old Policy)')) return
+    if (!validatePolicyJson(policyAfter, 'After (New Policy)')) return
     setLoading(true); setDiffResult(null); setError(null); setExpandedDiffFindings({ before: {}, after: {} })
     try {
       const [resBefore, resAfter] = await Promise.all([
@@ -457,6 +486,12 @@ export default function Home() {
         </div>
       )}
 
+      {jsonError && (
+        <div className="bg-red-900/40 border border-red-500 rounded-xl p-4 text-red-300 text-sm mb-6">
+          <p className="font-semibold mb-1">⚠️ Invalid Input</p>
+          <pre className="text-xs whitespace-pre-wrap font-sans">{jsonError}</pre>
+        </div>
+      )}
       {error && <div className="bg-red-900/40 border border-red-500 rounded-xl p-4 text-red-300 text-sm mb-6">{error}</div>}
       {loading && <LoadingSkeleton />}
 
